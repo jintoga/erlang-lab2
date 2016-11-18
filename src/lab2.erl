@@ -1,31 +1,33 @@
 %% @author DAT 
 -module(lab2). 
--export([start/0, make_request/2, attackBoss/1,  game/1, tanker/0]).
+-export([start/0, make_request/2, getAttacked/2,  game/0, tanker/0]).
 
 make_request(ServerId, Msg) ->
     ServerId ! Msg.
 
-attackBoss(N) ->  
-	io:format("Bosses HP: "), N - 10.
+getAttacked(0, Character) -> io:format("~n ~s: I'm dead @_o", [Character]);
 
-game(Tanker_PID) ->
+getAttacked(HP, Character) -> io:format("~n ~s's HP: ~w", [Character, HP - 10]).
+ 
+game() ->
 	io:format("~nGame: waiting", []),
     receive
         game_started ->
             io:format("~nGame: started", []),
-			make_request(Tanker_PID, game_started)
+			make_request(tanker_pid, game_started)
     end.
 
 tanker() ->
 	io:format("~nTanker: wating", []),
 	receive  
-		game_started -> io:format("~nTanker: attacking boss", [])
+		game_started -> getAttacked(20, "Tanker")
+						
 	end.
   
 
 start() ->
-	Tanker_PID = spawn(lab2, tanker, []),
-	Game_PID = spawn(lab2, game, [Tanker_PID]),
-    make_request(Game_PID, game_started).
+	register(tanker_pid, spawn(lab2, tanker, [])),
+	register(game_pid, spawn(lab2, game, [])), 
+    make_request(game_pid, game_started).
 	
  
