@@ -3,12 +3,11 @@
 -export([start/0, make_request/2, getAttackedBy/3, game/0, tanker/1, boss/1, archer/1, healer/1]).
  
 
-make_request(ServerId, Msg) ->
-    ServerId ! Msg.
+make_request(Id, Msg) -> Id ! Msg.
 
 getAttackedBy(0, Host, Attacker) -> io:format("~n~s: I'm dead @_o. Got attacked by: ~s", [Host, Attacker]);
 
-getAttackedBy(HP, Host, Character) -> io:format("~n~s(~w): Got attacked by ~s", [Host, HP - 10, Character]).
+getAttackedBy(HP, Host, Attacker) -> io:format("~n~s(~w): Got attacked by ~s", [Host, HP - 10, Attacker]).
   
 
 game() ->
@@ -24,8 +23,9 @@ tanker(TANKER_HP) ->
 	receive  
 		game_started -> io:format("~nTanker: Game started! Attacking Boss", []),
 						make_request(boss_pid, get_attacked_by_tanker);
-		get_attacked_by_boss -> getAttackedBy(TANKER_HP, "Tanker", "Boss")				
-	end.
+		get_attacked_by_boss -> getAttackedBy(TANKER_HP, "Tanker", "Boss")
+	end,
+	tanker(TANKER_HP - 10).		
   
 boss(BOSS_HP) ->
 	io:format("~nBoss(~w): wating", [BOSS_HP]),
