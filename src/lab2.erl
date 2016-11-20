@@ -18,7 +18,7 @@ game() ->
             io:format("~nGame: started", [])
     end.
 
-tanker(0) -> io:format("~nTanker: I'm dead", []), 
+tanker(0) -> getAttackedBy(0, "Tanker", "Boss"), 
 			 make_request(boss_pid, tanker_dead);
 
 tanker(TANKER_HP) ->
@@ -39,7 +39,8 @@ boss(BOSS_HP) ->
 		get_attacked_by_tanker ->  getAttackedBy(BOSS_HP, "Boss", "Tanker"),
 								   make_request(tanker_pid, get_attacked_by_boss),
 								   boss(BOSS_HP - 10)
-	end. 
+	end,
+	io:format("~nBoss(~w): wating", [BOSS_HP]).
 
 start() ->  
 	register(game_pid, spawn(lab2, game, [])), 
