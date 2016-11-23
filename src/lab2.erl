@@ -18,12 +18,14 @@ game() ->
             io:format("~nGame: started", [])
     end.
 
-tanker(0) -> getAttackedBy(0, "Tanker", "Boss"), 
-			 make_request(boss_pid, tanker_dead);
+tanker(0) -> make_request(boss_pid, tanker_dead),
+			 io:format("~nTanker: I'm dead @_o Boss Won. Game Over!", []);
+			 
 
 tanker(TANKER_HP) ->
 	io:format("~nTanker(~w): wating", [TANKER_HP]),  
 	receive  
+		boss_dead -> io:format("~nGame Over! Tanker Won", []);
 		game_started -> io:format("~nTanker: Game started! Attacking Boss", []),
 						make_request(boss_pid, get_attacked_by_tanker),
 						tanker(TANKER_HP); 
@@ -35,10 +37,17 @@ tanker(TANKER_HP) ->
 								make_request(healer_pid, tanker_called),
 								tanker(TANKER_HP_NEW);
 		get_healed -> TANKER_HP_NEW = TANKER_HP + 10,
-					  io:format("~nTanker(~w): Get healed by Healer!", [TANKER_HP_NEW])
+					  io:format("~nTanker(~w): Get healed by Healer!", [TANKER_HP_NEW]),  
+					  make_request(boss_pid, duel),  
+					  tanker(TANKER_HP_NEW);
+		duel -> TANKER_HP_NEW = TANKER_HP - 10, 
+				io:format("~nTanker(~w): Attacking Boss again in a Duel!", [TANKER_HP_NEW]), 
+				make_request(boss_pid, duel),   
+				tanker(TANKER_HP_NEW) 
 	end.		
   
-boss(0) -> io:format("~nBoss: I'm dead. Game Over!", []);
+boss(0) -> make_request(tanker_pid, boss_dead),
+		   io:format("~nBoss: I'm dead. Game Over!", []);
 	
 boss(BOSS_HP) -> 
 	io:format("~nBoss(~w): wating", [BOSS_HP]),
@@ -55,11 +64,16 @@ boss(BOSS_HP) ->
 								  make_request(archer_pid, get_attacked_by_boss),
 								  boss(BOSS_HP_NEW);
 		archer_dead -> io:format("~nBoss(~w): Archer is dead LMAO attacking Healer", [BOSS_HP]),
-					   make_request(healer_pid, get_attacked_by_boss) 
+					   make_request(healer_pid, get_attacked_by_boss),
+					   boss(BOSS_HP);
+		duel ->  BOSS_HP_NEW = BOSS_HP - 10, 
+				 getAttackedBy(BOSS_HP_NEW, "Boss", "Tanker"),  
+				 io:format("~nBoss(~w): Attacking back Tanker in a Duel!", [BOSS_HP_NEW]),   
+				 make_request(tanker_pid, duel), 
+				 boss(BOSS_HP_NEW)
 	end.
    
-archer(0) -> getAttackedBy(0, "Archer", "Boss"), 
-			 make_request(boss_pid, archer_dead);
+archer(0) -> make_request(boss_pid, archer_dead);
 
 archer(ARCHER_HP) ->  
 	io:format("~nArcher(~w): wating", [ARCHER_HP]), 
@@ -72,7 +86,8 @@ archer(ARCHER_HP) ->
 								archer(ARCHER_HP_NEW)
 	end.
 
-healer(0) -> getAttackedBy(0, "Healer", "Boss");
+healer(0) -> getAttackedBy(0, "Healer", "Boss"),
+			 make_request(tanker_pid, healer_dead);
 
 healer(HEALER_HP) ->
 	io:format("~nHealer(~w): wating", [HEALER_HP]),
@@ -86,7 +101,7 @@ healer(HEALER_HP) ->
 
 start() ->  
 	register(game_pid, spawn(lab2, game, [])), 
-	register(boss_pid, spawn(lab2, boss, [80])), 
+	register(boss_pid, spawn(lab2, boss, [60])), 
 	register(tanker_pid, spawn(lab2, tanker, [50])), 
 	register(archer_pid, spawn(lab2, archer, [10])),
 	register(healer_pid, spawn(lab2, healer, [10])),
